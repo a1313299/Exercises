@@ -1,0 +1,53 @@
+gv.setEye([0,60,-90]);
+gv.setCenter([0,10,90]);
+
+var arcUp=dm.getDataByTag('arcUp');
+var beltR=dm.getDataByTag('beltR');
+
+
+var dx=60,dy=0.5;
+var delta=1;
+ht.Default.startAnim({
+    frames:40,
+    interval:40,
+    action: function(v,t){
+        arcUp.s({
+        'shape3d.side':dx,
+        'shape3d.side.from':0,
+        'shape3d.side.to':dy
+        })
+        dx-=0.5;
+        dy+=0.5;
+    },
+    finishFunc: function(){
+        console.log('即将执行setHeight');
+        moveBelt(beltR);
+    }
+});
+
+function moveBelt(roller){
+    ht.Default.startAnim({
+        frames:50,
+        interval:40,
+        action: function(v,t){
+            console.log('执行到了setHeight之前');
+            roller.setWidth(delta);
+            console.log(roller.getWidth());
+            //console.log('执行到了setHeight之后');
+            delta+=1;
+        },
+        finishFunc: function(){
+            console.log(roller.getHeight());
+        }
+    });
+}
+
+
+
+/**
+ moveRoller();
+ createArc();
+ destroyArc(delay);
+ moveBelt();
+ destroyBelt();
+ */
