@@ -1,0 +1,86 @@
+gv.setEye([0,60,-90]);
+gv.setCenter([0,10,90]);
+
+var arcUp=dm.getDataByTag('arcUp');
+var beltR=dm.getDataByTag('beltR');
+var arcR=dm.getDataByTag('arcR');
+var beltB=dm.getDataByTag('beltB');
+var arcL=dm.getDataByTag('arcL');
+var beltL=dm.getDataByTag('beltL');
+
+var dx=40,dy=0.5;
+start();
+
+function start(){
+    ht.Default.startAnim({
+        duration:2000,
+        action: function(v,t){
+            arcUp.s({
+            'shape3d.side':dx,
+            'shape3d.side.from':0,
+            'shape3d.side.to':0 + 17*v
+            })
+        },
+        finishFunc: function(){
+            console.log('即将执行setHeight');
+            moveBelt(beltR);
+            destroyArc();
+        }
+    });
+}
+
+
+function moveBelt(roller){
+    ht.Default.startAnim({
+        duration:3000,
+        action: function(v,t){
+            console.log('执行到了setHeight之前');
+            roller.setTall(48*v);
+        },
+        finishFunc: function(){
+            //console.log(roller.getHeight());
+        }
+    });
+}
+function destroyArc(){
+    ht.Default.startAnim({
+        delay:4000,
+        duration:3000,
+        action: function(v,t){
+            arcUp.s({
+            'shape3d.side':dx,
+            'shape3d.side.from':0+17*v,
+            'shape3d.side.to':17 
+            })
+        },
+        finishFunc: function(){
+            destroyBelt(beltR);
+        }
+    });
+}
+function destroyBelt(beltR){
+    debugger
+    console.log('锚点',beltR.getAnchor3d())
+    beltR.setAnchor3d(0.5,0,0.5,true);
+    console.log('锚点2',beltR.getAnchor3d())
+    console.log('角度2',beltR.r3())
+    ht.Default.startAnim({
+        duration:3000,
+        action: function(v,t){
+            console.log('角度2',beltR.r3())
+            beltR.setTall(48-48*v);
+        },
+        finishFunc: function(){
+            //console.log(roller.getHeight());
+        }
+    });
+}
+
+
+/**
+ moveRoller();
+ createArc();
+ destroyArc(delay);
+ moveBelt();
+ destroyBelt();
+ */
