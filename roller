@@ -1,3 +1,307 @@
+
+var wv=0;
+sys.SetAttribute('warningValue', 'text', 0);
+sys.SetAttribute('warningState', 'text', '正常');
+sys.SetAttribute('warningState','s:text.color','#0000FF');
+sys.SetAttribute('warningValue','s:text.color','#0000FF');
+
+btn1_onClick = function(event, data, view){
+    wv=wv+1;
+    sys.SetAttribute('warningValue', 'text', wv);
+    displayState(wv);
+};
+
+btn2_onClick = function(event, data, view){
+    wv=wv-1;
+    sys.SetAttribute('warningValue', 'text', wv);
+    displayState(wv);
+};
+
+function displayState(var1)
+{
+    if(var1==0)
+    {
+        sys.SetAttribute('warningState', 'text', '正常');
+        sys.SetAttribute('warningValue','s:text.color','#0000FF');
+        sys.SetAttribute('warningState','s:text.color','#0000FF');
+        
+    }
+    if(var1<0)
+     {
+        sys.SetAttribute('warningState', 'text', '超下限');
+        sys.SetAttribute('warningValue','s:text.color','#00FF00');
+        sys.SetAttribute('warningState','s:text.color','#00FF00');
+        
+    }
+    if(var1>0)
+    {
+        sys.SetAttribute('warningState', 'text', '超上限');
+        sys.SetAttribute('warningValue','s:text.color','#FF0000');
+        sys.SetAttribute('warningState','s:text.color','#FF0000');
+        
+    }
+}
+
+/***********************************************************************************/
+var pStart=[4000,5000,0];
+var pEnd=[1500, 1500, 0];
+var pTarget=[0,0,0];
+
+var obj=dm.getDataByTag('car');
+var mx=obj.getPosition().x;
+var my=obj.getElevation();
+var mz=obj.getPosition().y;
+var origSize=obj.s3();
+
+gv.setEye(pStart);
+gv.setCenter(pTarget);
+
+/**************入场动画***************/
+ht.Default.startAnim({
+    duration: 3000,
+    action: function(v,t){
+        var newPos=[pStart[0]+(pEnd[0]-pStart[0])*v,pStart[1]+(pEnd[1]-pStart[1])*v,0];
+        gv.setEye(newPos);
+    },
+    finishFunc: function(){
+        /**************向前运动***************/
+        ht.Default.startAnim({
+            duration: 5000,
+            action: function(v,t)
+            {
+                mz=mz+2;
+                obj.setRotationY(Math.PI*2*v);
+                obj.p3([mx,my,mz]);
+            },
+            finishFunc: function(){
+                /*************后退运动****************/
+                obj.s('shape3d.blend','red');
+                ht.Default.startAnim({
+                    duration: 5000,
+                    action: function(v,t)
+                    {
+                        obj.s3(obj.s3()[0]+(50-obj.s3()[0])*0.1*v,obj.s3()[1]+(50-obj.s3()[1])*0.1*v,obj.s3()[2]+(50-obj.s3()[2])*0.1*v);
+                        mz=mz-2;
+                        obj.setRotation(Math.PI*2*v);
+                        obj.p3([mx,my,mz]);    
+                    },
+                    finishFunc: function(){
+                        obj.s3(origSize);
+                        alert('动画播放完毕');
+                    }  
+                });
+            }  
+        });
+
+    }
+});
+
+/*var myAnim = ht.Default.startAnim({
+    duration: 5000,
+    });*/
+//g3d.moveCamera(pStart,pEnd,myAnim);
+/*********************************************************************************/
+//dataModel=new ht.DataModel();
+//g3d=new ht.graph3d.Graph3dView(dataModel);
+
+var origEye=[-500,400,500];
+var origCenter=[500,0,500];
+resetCam();
+gv.setGridSize(100);
+gv.setGridVisible(true);
+gv.setOriginAxisVisible(true);
+gv.setCenterAxisVisible(true); 
+gv.setEditable(true);
+
+formPane = new ht.widget.FormPane();
+formPane.setPadding(5);
+formPane.setHGap(5);
+formPane.setWidth(200);
+formPane.setHeight(350);
+
+var car=dm.getDataByTag('car');
+var origPos=car.p3();
+var isFirstPersonMode=false;
+var existAnim=false;
+
+var observor=new ht.Node();
+observor.p3(60,40,400);
+observor.s3(10,10,10);
+observor.setHost(car);
+observor.s({
+    'shape3d':'sphere',
+    'shape3d.color':'#FF0000',
+    'note': 'observor'
+});
+dm.add(observor);
+
+var moveAnim;
+var dx=2,dz=0;
+
+formPane.addRow([
+    'FirstPersonMode',
+    {
+        checkBox:{
+            selected:false,
+            onValueChanged:function(){
+                console.log(this.getValue());
+                if(this.getValue()){
+                    isFirstPersonMode=true;
+                    firstView();
+                }else{
+                    isFirstPersonMode=false;
+                    resetCam();
+                }
+                
+            }
+        }
+    }
+],[100,1]);
+formPane.addRow([
+    {
+        button:{
+            label:'开始',
+            onClicked: function(){
+                dx=2;dz=0;
+                if(!existAnim){
+                    moveAnim=ht.Default.startAnim({
+                    duration:300000,
+                    action: function(v,t){
+                        car.p3(car.p3()[0]+dx,car.p3()[1],car.p3()[2]+dz);
+                        if(isFirstPersonMode)
+                            firstView();
+                    }
+                });
+                }
+                existAnim=true;
+            }
+        }
+    },
+    {
+        button:{
+            label:'加速',
+            onClicked: function(){
+                dx+=2;
+            }
+        }
+    },
+    {
+        button:{
+            label:'停止',
+            onClicked: function(){
+                stopAnim();
+            }
+        }
+    },
+    {
+        button:{
+            label:'重置',
+            onClicked: function(){
+                stopAnim();
+                car.p3(origPos);
+                resetCam();
+                isFirstPersonMode=false;
+            }
+        }
+    }    
+
+],[0.2,0.2,0.2,0.2]);
+formPane.getView().className = 'formpane';
+document.body.appendChild(formPane.getView());
+
+function resetCam()
+{
+    gv.setEye(origEye);
+    gv.setCenter(origCenter);
+}
+function firstView()
+{
+    gv.setEye(observor.p3());
+    gv.setCenter(observor.p3()[0]+500,observor.p3()[1],observor.p3()[2]);
+}
+function stopAnim()
+{
+    moveAnim.stop(true);
+    existAnim=false;
+}
+
+/*********************************************************************************/
+
+gv=bgGraphView3D;
+g3d=bgGraphView3D.getDataModel();
+
+var origEye=[-500,400,500];
+var origCenter=[500,0,500];
+resetCam();
+gv.setGridSize(100);
+gv.setGridVisible(true);
+gv.setOriginAxisVisible(true);
+gv.setCenterAxisVisible(true); 
+gv.setEditable(true);
+
+var car=g3d.getDataByTag('car');
+//console.log(car);
+var origPos=car.p3();
+var existAnim=false;
+
+var moveAnim;
+var dx=2,dz=0;
+
+
+btn1_onClick = function(event, data, view){
+    dx=2;dz=0;
+    if(!existAnim){
+        console.log('位移之前');
+        console.log(car);
+        moveAnim=ht.Default.startAnim({
+        duration:300000,
+        action: function(v,t){
+            car.p3(car.p3()[0]+dx,car.p3()[1],car.p3()[2]+dz);
+            console.log('位移之后');
+            //console.log('位置为：'+car.p3());
+            sys.SetAttribute('dashBoard', '#value', dx);
+        }
+    });
+    existAnim=false;
+}
+};
+
+btn2_onClick = function(event, data, view){
+    dx+=2;
+};
+
+
+btn3_onClick = function(event, data, view){
+    stopAnim();
+};
+
+btn4_onClick = function(event, data, view){
+    stopAnim();
+    car.p3(origPos);
+    resetCam();
+};
+
+
+function resetCam()
+{
+    gv.setEye(origEye);
+    gv.setCenter(origCenter);
+}
+function stopAnim()
+{
+    sys.SetAttribute('dashBoard','#value','0');
+    moveAnim.stop(true);
+    existAnim=false;
+}
+/*************************************************************************/
+
+
+
+
+
+
+
+
 gv.setEye([0,60,-90]);
 gv.setCenter([0,10,90]);
 
