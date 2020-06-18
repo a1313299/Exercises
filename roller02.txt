@@ -1,0 +1,108 @@
+gv.setEye([0,60,-90]);
+gv.setCenter([0,10,90]);
+
+var edgeNum=40;
+var arcData=[
+    {dur:2000,startSide:0,endSide:17},
+    {dur:2000,startSide:15,endSide:30},
+    {dur:2000,startSide:30,endSide:42}
+];
+var beltData=[
+    {dur:3000,length:48},
+    {dur:3000,length:52},
+    {dur:3000,length:48}
+];
+
+var i=0;
+var belt,arc;
+var arcObj='arc'+i;
+arc=dm.getDataByTag(arcObj);
+moveArc(arc,arcData[i]);
+
+
+function moveArc(arc,data){
+    var _startSide=data.startSide;
+    var _endSide=data.endSide;
+    var _dur=data.dur;
+    if(_endSide>edgeNum){
+        var tempt=_endSide-edgeNum;
+        _endSide-=tempt;
+        _startSide-=tempt;
+        var rot=(tempt/40)*2*Math.PI;
+        //arc.r3()[2]+=rot*(180/Math.PI);
+        console.log('改变前的角度值：');
+        console.log(arc.r3());
+        arc.r3(arc.r3()[0],arc.r3()[1],arc.r3()[2]+rot)
+
+        console.log('改变后的角度值：');
+        console.log(arc.r3());
+    }
+    arc.s({
+        'shape3d.opacity':1,
+        'shape3d.color':'#FF0000',
+        'shape3d.side':edgeNum,
+    });
+    ht.Default.startAnim({
+        duration:_dur,
+        action: function(v,t){
+            arc.s({
+            'shape3d.side.from':_startSide,
+            'shape3d.side.to':_startSide + (_endSide-_startSide)*v
+            })
+        },
+        finishFunc: function(){
+            var beltObj='belt'+i;
+            belt=dm.getDataByTag(beltObj);
+            moveBelt(belt,beltData[i]);
+            destroyArc(arc,arcData[i]);
+        }
+    });
+}
+
+
+function moveBelt(belt,data){
+    var _dur=data.dur;
+    var _length=data.length;
+    ht.Default.startAnim({
+        duration:_dur,
+        action: function(v,t){
+            belt.setTall(_length*v);
+        },
+        finishFunc: function(){
+            destroyBelt(belt,data);
+            i++;//
+            var arcObj='arc'+i;
+            arc=dm.getDataByTag(arcObj);
+            moveArc(arc,arcData[i]);
+            
+        }
+    });
+}
+function destroyArc(arc,data){
+    var _startSide=data.startSide;
+    var _endSide=data.endSide;
+    var _dur=data.dur;
+    ht.Default.startAnim({
+        delay:4000,
+        duration:_dur,
+        action: function(v,t){
+            arc.s({
+            'shape3d.side':edgeNum,
+            'shape3d.side.from':_startSide+(_endSide-_startSide)*v,
+            'shape3d.side.to':_endSide 
+            })
+        }
+    });
+}
+function destroyBelt(belt,data){
+    var _dur=data.dur;
+    var _length=data.length;
+    belt.setAnchor3d(0.5,0,0.5,true);
+        ht.Default.startAnim({
+            delay:4000,
+            duration:_dur,
+            action: function(v,t){
+                belt.setTall(_length-_length*v);
+            }
+        });
+}
